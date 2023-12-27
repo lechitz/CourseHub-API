@@ -5,7 +5,11 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	adpterHttpInput "github.com/lechitz/CourseHub-API/adapter/input/http"
 	"github.com/lechitz/CourseHub-API/adapter/input/http/handler"
+	"github.com/lechitz/CourseHub-API/adapter/output/cache"
+	"github.com/lechitz/CourseHub-API/adapter/output/database"
+	"github.com/lechitz/CourseHub-API/application/service"
 	"github.com/lechitz/CourseHub-API/configuration/environment"
+	"github.com/lechitz/CourseHub-API/configuration/repository"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"net/http"
@@ -38,16 +42,34 @@ func init() {
 
 func main() {
 
-	contextPath := environment.Setting.Server.Context
+	redisCache := cache.NewRedis(loggerSugar)
+
+	postgresConnectionDB := repository.NewPostgresDB(environment.Setting.Postgres.DBUser, environment.Setting.Postgres.DBPassword,
+		environment.Setting.Postgres.DBName, environment.Setting.Postgres.DBHost, environment.Setting.Postgres.DBPort, loggerSugar)
+
+	coursePostgresDB := database.NewCoursePostgresDB(postgresConnectionDB, loggerSugar)
 
 	genericHandler := &handler.Generic{
 		LoggerSugar: loggerSugar,
 	}
 
+	courseService := service.CourseService{
+		LoggerSugar:                    loggerSugar,
+		CourseDomainDataBaseRepository: &coursePostgresDB,
+		CourseDomainCacheRepository:    &redisCache,
+	}
+
+	courseHandler := &handler.Course{
+		CourseService: courseService,
+		LoggerSugar:   loggerSugar,
+	}
+
+	contextPath := environment.Setting.Server.Context
 	newRouter := adpterHttpInput.GetNewRouter(loggerSugar)
 	newRouter.GetChiRouter().Route(fmt.Sprintf("/%s", contextPath), func(r chi.Router) {
 		r.NotFound(genericHandler.NotFound)
 		r.Group(newRouter.AddGroupHandlerHealthCheck(genericHandler))
+		r.Group(newRouter.AddGroupHandlerCourse(courseHandler))
 	})
 
 	serverHttp := &http.Server{
@@ -60,9 +82,11 @@ func main() {
 
 	loggerSugar.Infow("server started", "port", serverHttp.Addr,
 		"contextPath", contextPath)
+
 	if err := serverHttp.ListenAndServe(); err != nil {
 		loggerSugar.Errorw("error to listen and starts server", "port", serverHttp.Addr,
 			"contextPath", contextPath, "err", err.Error())
 		panic(err.Error())
 	}
+
 }
