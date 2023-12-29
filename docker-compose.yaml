@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6380:6379"
+    expose:
+      - "6380"
+    networks:
+      - rede_local
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=coursehub-api
+      - POSTGRES_PASSWORD=vrsoftware23
+      - POSTGRES_DB=coursehub
+    volumes:
+      - /tmp/postgres-volume:/data/db
+      - ./adapter/output/database/db/:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    expose:
+      - "5433"
+    networks:
+      - rede_local
+
+networks:
+  rede_local:

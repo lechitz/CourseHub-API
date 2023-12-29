@@ -1,4 +1,10 @@
 package domain
 
-type Course struct {
+import "time"
+
+type CourseDomain struct {
+	ID               int64
+	Description      string
+	Outline          string
+	RegistrationDate time.Time
 }
