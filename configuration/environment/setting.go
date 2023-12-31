@@ -15,9 +15,9 @@ type setting struct {
 	}
 
 	Postgres struct {
-		DBUser     string `envconfig:"DB_USER" default:"coursehub_api"`
+		DBUser     string `envconfig:"DB_USER" default:"coursehub-api"`
 		DBPassword string `envconfig:"DB_PASSWORD" default:"vrsoftware23"`
-		DBName     string `envconfig:"DB_NAME" default:"coursehub_api"`
+		DBName     string `envconfig:"DB_NAME" default:"coursehub"`
 		DBHost     string `envconfig:"DB_HOST" default:"localhost"`
 		DBPort     string `envconfig:"DB_PORT" default:"5433"`
 		DBType     string `envconfig:"DB_TYPE" default:"postgres"`
