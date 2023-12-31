@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	SuccessToCreateCourse = "course created with success"
-	SuccessToGetCourse    = "course found with success"
-	ErrorToCreateCourse   = "error to create and process the request"
-	ErrorToGetCourse      = "error to get course by id"
-	CourseNotFound        = "course with id %d wasn´t found"
-	FieldOutlineError     = "Field outline cannot be empty"
-	FieldDescriptionError = "Field description cannot be empty"
+	SuccessToCreateCourse   = "course created with success"
+	SuccessToGetCourse      = "course found with success"
+	ErrorToCreateCourse     = "error to create and process the request"
+	ErrorToGetCourse        = "error to get course by id"
+	CourseNotFound          = "course with id %d wasn´t found"
+	FieldOutlineError       = "Field outline cannot be empty"
+	FieldDescriptionError   = "Field description cannot be empty"
+	ErrorToGetListOfCourses = "error to get list of courses"
+	SuccessToListCourses    = "list of courses retrieved successfully"
 )
 
 type Course struct {
@@ -122,14 +124,12 @@ func (c *Course) GetCourses(w http.ResponseWriter, r *http.Request) {
 		Context: context.Background(),
 	}
 
-	// Criar um slice de cursos para passar para o serviço
 	var courses []domain.CourseDomain
 
-	// Chamar o método GetCourses do serviço corrigido
 	courses, err := c.CourseService.GetCourses(contextControl, courses)
 	if err != nil {
-		c.LoggerSugar.Errorw("error to get list of courses", "error", err.Error())
-		response := objectResponse("error to get list of courses", err.Error())
+		c.LoggerSugar.Errorw(ErrorToGetListOfCourses, "error", err.Error())
+		response := objectResponse(ErrorToGetListOfCourses, err.Error())
 		responseReturn(w, http.StatusInternalServerError, response.Bytes())
 		return
 	}
@@ -141,6 +141,6 @@ func (c *Course) GetCourses(w http.ResponseWriter, r *http.Request) {
 		courseResponses = append(courseResponses, courseResponse)
 	}
 
-	response := objectResponse(courseResponses, "list of courses retrieved successfully")
+	response := objectResponse(courseResponses, SuccessToListCourses)
 	responseReturn(w, http.StatusOK, response.Bytes())
 }
