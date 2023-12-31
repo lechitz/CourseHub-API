@@ -100,3 +100,31 @@ func (c *Course) GetByID(w http.ResponseWriter, r *http.Request) {
 	response := objectResponse(courseResponse, SuccessToGetCourse)
 	responseReturn(w, http.StatusOK, response.Bytes())
 }
+
+func (c *Course) GetCourses(w http.ResponseWriter, r *http.Request) {
+	contextControl := domain.ContextControl{
+		Context: context.Background(),
+	}
+
+	// Criar um slice de cursos para passar para o serviço
+	var courses []domain.CourseDomain
+
+	// Chamar o método GetCourses do serviço corrigido
+	courses, err := c.CourseService.GetCourses(contextControl, courses)
+	if err != nil {
+		c.LoggerSugar.Errorw("error to get list of courses", "error", err.Error())
+		response := objectResponse("error to get list of courses", err.Error())
+		responseReturn(w, http.StatusInternalServerError, response.Bytes())
+		return
+	}
+
+	var courseResponses []CourseResponse
+	for _, courseDomain := range courses {
+		var courseResponse CourseResponse
+		copier.Copy(&courseResponse, &courseDomain)
+		courseResponses = append(courseResponses, courseResponse)
+	}
+
+	response := objectResponse(courseResponses, "list of courses retrieved successfully")
+	responseReturn(w, http.StatusOK, response.Bytes())
+}

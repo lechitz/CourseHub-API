@@ -6,8 +6,9 @@ import (
 )
 
 type CourseDomainDataBaseRepositoryMock struct {
-	SaveMock    func(contextControl domain.ContextControl, course domain.CourseDomain) (domain.CourseDomain, error)
-	GetByIDMock func(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error)
+	SaveMock       func(contextControl domain.ContextControl, course domain.CourseDomain) (domain.CourseDomain, error)
+	GetByIDMock    func(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error)
+	GetCoursesMock func(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error)
 }
 
 type CourseDomainCacheRepositoryMock struct {
@@ -30,9 +31,23 @@ func (c CourseDomainDataBaseRepositoryMock) GetByID(contextControl domain.Contex
 	return domain.CourseDomain{}, false, nil
 }
 
+func (c CourseDomainDataBaseRepositoryMock) GetCourses(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error) {
+	if c.GetCoursesMock != nil {
+		return c.GetCoursesMock(contextControl, courses)
+	}
+	return []domain.CourseDomain{}, nil
+}
+
 func (c CourseDomainCacheRepositoryMock) Delete(contextControl domain.ContextControl, key string) error {
 	if c.DeleteMock != nil {
 		return c.DeleteMock(contextControl, key)
+	}
+	return nil
+}
+
+func (c CourseDomainCacheRepositoryMock) Set(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
+	if c.SetMock != nil {
+		return c.SetMock(contextControl, key, hash, expirationTime)
 	}
 	return nil
 }
@@ -42,11 +57,4 @@ func (c CourseDomainCacheRepositoryMock) Get(contextControl domain.ContextContro
 		return c.GetMock(contextControl, key)
 	}
 	return "", nil
-}
-
-func (c CourseDomainCacheRepositoryMock) Set(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
-	if c.SetMock != nil {
-		return c.SetMock(contextControl, key, hash, expirationTime)
-	}
-	return nil
 }

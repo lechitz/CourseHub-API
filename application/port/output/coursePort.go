@@ -8,6 +8,7 @@ import (
 type ICourseDomainDataBaseRepository interface {
 	Save(contextControl domain.ContextControl, course domain.CourseDomain) (domain.CourseDomain, error)
 	GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error)
+	GetCourses(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error)
 }
 
 type ICourseDomainCacheRepository interface {

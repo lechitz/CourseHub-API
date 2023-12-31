@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/lechitz/CourseHub-API/application/domain"
 	"github.com/lechitz/CourseHub-API/application/port/output"
@@ -176,6 +177,104 @@ func TestCourseService_GetById(t *testing.T) {
 			course, exists, err := courseService.GetByID(contextControl, 1)
 			assert.Equal(t, test.ExpectedResult, course)
 			assert.Equal(t, test.ExpectedExists, exists)
+			assert.Equal(t, test.ExpectedError, err)
+		})
+	}
+}
+
+func TestCourseService_GetCourses(t *testing.T) {
+
+	tests := []struct {
+		Name                           string
+		Courses                        []domain.CourseDomain
+		CourseDomainDataBaseRepository output.ICourseDomainDataBaseRepository
+		CourseDomainCacheRepository    output.ICourseDomainCacheRepository
+		ExpectedResult                 []domain.CourseDomain
+		ExpectedError                  error
+	}{
+		{
+			Name: "success to get courses",
+			Courses: []domain.CourseDomain{
+				{
+					ID:          1,
+					Description: "Matematica",
+					Outline:     "calculo 1",
+				},
+				{
+					ID:          2,
+					Description: "Português",
+					Outline:     "Tempos Verbais",
+				},
+			},
+			CourseDomainDataBaseRepository: output.CourseDomainDataBaseRepositoryMock{
+				GetCoursesMock: func(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error) {
+					return []domain.CourseDomain{
+						{
+							ID:          1,
+							Description: "Matematica",
+							Outline:     "calculo 1",
+						},
+						{
+							ID:          2,
+							Description: "Português",
+							Outline:     "Tempos Verbais",
+						},
+					}, nil
+				},
+			},
+			CourseDomainCacheRepository: output.CourseDomainCacheRepositoryMock{
+				SetMock: func(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
+					return nil
+				},
+			},
+			ExpectedResult: []domain.CourseDomain{
+				{
+					ID:          1,
+					Description: "Matematica",
+					Outline:     "calculo 1",
+				},
+				{
+					ID:          2,
+					Description: "Português",
+					Outline:     "Tempos Verbais",
+				},
+			},
+			ExpectedError: nil,
+		},
+		{
+			Name:    "error to get courses",
+			Courses: []domain.CourseDomain{},
+			CourseDomainDataBaseRepository: output.CourseDomainDataBaseRepositoryMock{
+				GetCoursesMock: func(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error) {
+					return []domain.CourseDomain{}, fmt.Errorf("error to get courses")
+				},
+			},
+			CourseDomainCacheRepository: output.CourseDomainCacheRepositoryMock{
+				SetMock: func(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
+					return nil
+				},
+			},
+			ExpectedResult: []domain.CourseDomain{},
+			ExpectedError:  fmt.Errorf("error to get courses"),
+		},
+	}
+
+	for _, test := range tests {
+
+		t.Run(test.Name, func(t *testing.T) {
+
+			courseService := CourseService{
+				LoggerSugar:                    loggerSugar,
+				CourseDomainDataBaseRepository: test.CourseDomainDataBaseRepository,
+				CourseDomainCacheRepository:    test.CourseDomainCacheRepository,
+			}
+
+			contextControl := domain.ContextControl{
+				Context: context.Background(),
+			}
+
+			courses, err := courseService.GetCourses(contextControl, test.Courses)
+			assert.Equal(t, test.ExpectedResult, courses)
 			assert.Equal(t, test.ExpectedError, err)
 		})
 	}

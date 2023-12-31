@@ -31,11 +31,11 @@ type CourseDB struct {
 	RegistrationDate time.Time `gorm:"column:registration_date"`
 }
 
-func (CourseDB) TableName() string {
+func (*CourseDB) TableName() string {
 	return "coursehub_api.course"
 }
 
-func (c CourseDB) CopyToCourseDomain() domain.CourseDomain {
+func (c *CourseDB) CopyToCourseDomain() domain.CourseDomain {
 	return domain.CourseDomain{
 		ID:               c.ID,
 		Description:      c.Description,
@@ -44,7 +44,7 @@ func (c CourseDB) CopyToCourseDomain() domain.CourseDomain {
 	}
 }
 
-func (cp CoursePostgresDB) Save(contextControl domain.ContextControl, courseDomain domain.CourseDomain) (domain.CourseDomain, error) {
+func (cp *CoursePostgresDB) Save(contextControl domain.ContextControl, courseDomain domain.CourseDomain) (domain.CourseDomain, error) {
 
 	var courseDB CourseDB
 	copier.Copy(&courseDB, &courseDomain)
@@ -59,7 +59,7 @@ func (cp CoursePostgresDB) Save(contextControl domain.ContextControl, courseDoma
 	return courseDB.CopyToCourseDomain(), nil
 }
 
-func (cp CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
+func (cp *CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
 	var courseDB CourseDB
 
 	result := cp.DB.WithContext(contextControl.Context).First(&courseDB, ID)
@@ -68,4 +68,20 @@ func (cp CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int6
 		return domain.CourseDomain{}, false, nil
 	}
 	return courseDB.CopyToCourseDomain(), true, nil
+}
+
+func (cp *CoursePostgresDB) GetCourses(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error) {
+	var coursesDB []CourseDB
+	err := cp.DB.WithContext(contextControl.Context).Find(&coursesDB).Error
+	if err != nil {
+		cp.LoggerSugar.Errorw("error to get list of courses", "error", err.Error())
+		return nil, err
+	}
+
+	var domainCourses []domain.CourseDomain
+	for _, courseDB := range coursesDB {
+		domainCourses = append(domainCourses, courseDB.CopyToCourseDomain())
+	}
+
+	return domainCourses, nil
 }
