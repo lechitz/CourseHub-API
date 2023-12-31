@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	CourseNotFound = "course not found"
+)
+
 type CoursePostgresDB struct {
 	DB          *gorm.DB
 	LoggerSugar *zap.SugaredLogger
@@ -18,11 +22,6 @@ func NewCoursePostgresDB(gormDB *gorm.DB, loggerSugar *zap.SugaredLogger) Course
 		DB:          gormDB,
 		LoggerSugar: loggerSugar,
 	}
-}
-
-func (cp CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 type CourseDB struct {
@@ -58,4 +57,15 @@ func (cp CoursePostgresDB) Save(contextControl domain.ContextControl, courseDoma
 	}
 
 	return courseDB.CopyToCourseDomain(), nil
+}
+
+func (cp CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
+	var courseDB CourseDB
+
+	result := cp.DB.WithContext(contextControl.Context).First(&courseDB, ID)
+	if result.RowsAffected == 0 {
+		cp.LoggerSugar.Errorw(CourseNotFound)
+		return domain.CourseDomain{}, false, nil
+	}
+	return courseDB.CopyToCourseDomain(), true, nil
 }
