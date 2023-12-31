@@ -23,8 +23,10 @@ const (
 )
 
 const (
-	CourseErrorToSaveInCache    = "error to save course in cache"
-	CourseErrorToGetByIDInCache = "error to save course in cache"
+	CourseErrorToSaveInCache                     = "error to save course in cache"
+	CourseErrorToGetByIDInCache                  = "error to get course in cache"
+	CourseDomainCacheRepositoryNotInitialized    = "CourseDomainCacheRepository not initialized"
+	CourseDomainDataBaseRepositoryNotInitialized = "CourseDomainDataBaseRepository not initialized"
 )
 
 func (service *CourseService) getCacheKey(cacheKeyType string, value string) string {
@@ -70,21 +72,18 @@ func (service *CourseService) GetByID(contextControl domain.ContextControl, ID i
 func (service *CourseService) GetCourses(contextControl domain.ContextControl, courses []domain.CourseDomain) ([]domain.CourseDomain, error) {
 
 	if service.CourseDomainDataBaseRepository == nil {
-		return []domain.CourseDomain{}, fmt.Errorf("CourseDomainDataBaseRepository não inicializado")
+		return []domain.CourseDomain{}, fmt.Errorf(CourseDomainDataBaseRepositoryNotInitialized)
 	}
 
-	// Obtenha os cursos do repositório de banco de dados
 	coursesFromDB, err := service.CourseDomainDataBaseRepository.GetCourses(contextControl, courses)
 	if err != nil {
 		return []domain.CourseDomain{}, err
 	}
 
-	// Verifique se o repositório de cache está inicializado
 	if service.CourseDomainCacheRepository == nil {
-		return []domain.CourseDomain{}, fmt.Errorf("CourseDomainCacheRepository não inicializado")
+		return []domain.CourseDomain{}, fmt.Errorf(CourseDomainCacheRepositoryNotInitialized)
 	}
 
-	// Atualize o cache para cada curso
 	for _, course := range coursesFromDB {
 		hash, err := json.Marshal(course)
 		if err != nil {
@@ -93,9 +92,7 @@ func (service *CourseService) GetCourses(contextControl domain.ContextControl, c
 
 		cacheKey := service.getCacheKey(CourseCacheKeyTypeID, strconv.FormatInt(course.ID, 10))
 
-		// Defina no cache
 		if err := service.CourseDomainCacheRepository.Set(contextControl, cacheKey, string(hash), CourseCacheTTL); err != nil {
-			// Registre um aviso em caso de erro, mas continue com o processamento
 			service.LoggerSugar.Warnw("CourseErrorToSetInCache", "id", course.ID)
 		}
 	}
