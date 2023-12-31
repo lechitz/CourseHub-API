@@ -20,6 +20,8 @@ const (
 	ErrorToCreateCourse   = "error to create and process the request"
 	ErrorToGetCourse      = "error to get course by id"
 	CourseNotFound        = "course with id %d wasn´t found"
+	FieldOutlineError     = "Field outline cannot be empty"
+	FieldDescriptionError = "Field description cannot be empty"
 )
 
 type Course struct {
@@ -52,6 +54,20 @@ func (c *Course) Create(w http.ResponseWriter, r *http.Request) {
 
 	var courseDomain domain.CourseDomain
 	copier.Copy(&courseDomain, &courseRequest)
+
+	if courseRequest.Outline == "" {
+		c.LoggerSugar.Errorw(ErrorToCreateCourse, "error", FieldOutlineError)
+		response := objectResponse(ErrorToCreateCourse, FieldOutlineError)
+		responseReturn(w, http.StatusBadRequest, response.Bytes())
+		return
+	}
+
+	if courseRequest.Description == "" {
+		c.LoggerSugar.Errorw(ErrorToCreateCourse, "error", FieldDescriptionError)
+		response := objectResponse(ErrorToCreateCourse, FieldDescriptionError)
+		responseReturn(w, http.StatusBadRequest, response.Bytes())
+		return
+	}
 
 	courseDomain, err := c.CourseService.Create(contextControl, courseDomain)
 	if err != nil {

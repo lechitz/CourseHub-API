@@ -64,7 +64,7 @@ func (service *CourseService) GetByID(contextControl domain.ContextControl, ID i
 	if err = service.CourseDomainCacheRepository.Set(contextControl,
 		service.getCacheKey(CourseCacheKeyTypeID, strconv.FormatInt(course.ID, 10)),
 		string(hash), CourseCacheTTL); err != nil {
-		service.LoggerSugar.Infow(CourseErrorToGetByIDInCache, "id", course.ID) //TODO: to adjust the keyAndValues
+		service.LoggerSugar.Infow(CourseErrorToGetByIDInCache, "course_id", course.ID)
 	}
 	return course, exists, nil
 }
@@ -93,7 +93,7 @@ func (service *CourseService) GetCourses(contextControl domain.ContextControl, c
 		cacheKey := service.getCacheKey(CourseCacheKeyTypeID, strconv.FormatInt(course.ID, 10))
 
 		if err := service.CourseDomainCacheRepository.Set(contextControl, cacheKey, string(hash), CourseCacheTTL); err != nil {
-			service.LoggerSugar.Warnw("CourseErrorToSetInCache", "id", course.ID)
+			service.LoggerSugar.Warnw("CourseErrorToSetInCache", "course_id", course.ID)
 		}
 	}
 
