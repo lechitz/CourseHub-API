@@ -26,7 +26,7 @@ func (cp CoursePostgresDB) GetByID(contextControl domain.ContextControl, ID int6
 }
 
 type CourseDB struct {
-	ID               int64     `gorm:"primaryKey, column:code"`
+	ID               int64     `gorm:"primaryKey, column:id"`
 	Description      string    `gorm:"column:description"`
 	Outline          string    `gorm:"column:outline"`
 	RegistrationDate time.Time `gorm:"column:registration_date"`
