@@ -3,17 +3,23 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/go-chi/chi"
 	"github.com/jinzhu/copier"
 	"github.com/lechitz/CourseHub-API/application/domain"
 	"github.com/lechitz/CourseHub-API/application/port/input"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 const (
-	SuccessToCreateCourse = "success to create course"
+	SuccessToCreateCourse = "course created with success"
+	SuccessToGetCourse    = "course found with success"
 	ErrorToCreateCourse   = "error to create and process the request"
+	ErrorToGetCourse      = "error to get course by id"
+	CourseNotFound        = "course with id %d wasn´t found"
 )
 
 type Course struct {
@@ -59,4 +65,38 @@ func (c *Course) Create(w http.ResponseWriter, r *http.Request) {
 	copier.Copy(&courseResponse, &courseDomain)
 	response := objectResponse(courseResponse, SuccessToCreateCourse)
 	responseReturn(w, http.StatusCreated, response.Bytes())
+}
+
+func (c *Course) GetByID(w http.ResponseWriter, r *http.Request) {
+	contextControl := domain.ContextControl{
+		Context: context.Background(),
+	}
+
+	var IDRequest, err = strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		c.LoggerSugar.Errorw(ErrorToGetCourse, "error", err.Error())
+		response := objectResponse(ErrorToGetCourse, err.Error())
+		responseReturn(w, http.StatusInternalServerError, response.Bytes())
+		return
+	}
+
+	courseDomain, exists, err := c.CourseService.GetByID(contextControl, IDRequest)
+	if err != nil {
+		c.LoggerSugar.Errorw(ErrorToGetCourse, "error", err.Error())
+		response := objectResponse(ErrorToGetCourse, err.Error())
+		responseReturn(w, http.StatusInternalServerError, response.Bytes())
+		return
+	}
+
+	if !exists {
+		c.LoggerSugar.Errorw(CourseNotFound)
+		response := objectResponse(CourseNotFound, fmt.Sprintf(CourseNotFound, IDRequest))
+		responseReturn(w, http.StatusNotFound, response.Bytes())
+		return
+	}
+
+	var courseResponse CourseResponse
+	copier.Copy(&courseResponse, &courseDomain)
+	response := objectResponse(courseResponse, SuccessToGetCourse)
+	responseReturn(w, http.StatusOK, response.Bytes())
 }

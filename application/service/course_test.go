@@ -97,3 +97,86 @@ func TestCourseService_Create(t *testing.T) {
 		})
 	}
 }
+
+func TestCourseService_GetById(t *testing.T) {
+
+	tests := []struct {
+		Name                           string
+		Course                         domain.CourseDomain
+		CourseDomainDataBaseRepository output.ICourseDomainDataBaseRepository
+		CourseDomainCacheRepository    output.ICourseDomainCacheRepository
+		ExpectedResult                 domain.CourseDomain
+		ExpectedExists                 bool
+		ExpectedError                  error
+	}{
+		{
+			Name: "success to get a course by id",
+			Course: domain.CourseDomain{
+				Description: "Português",
+				Outline:     "Tempos Verbais",
+			},
+			CourseDomainDataBaseRepository: output.CourseDomainDataBaseRepositoryMock{
+				GetByIDMock: func(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
+					return domain.CourseDomain{
+						ID:          1,
+						Description: "Português",
+						Outline:     "Tempos Verbais",
+					}, true, nil
+				},
+			},
+			CourseDomainCacheRepository: output.CourseDomainCacheRepositoryMock{
+				SetMock: func(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
+					return nil
+				},
+			},
+			ExpectedResult: domain.CourseDomain{
+				ID:          1,
+				Description: "Português",
+				Outline:     "Tempos Verbais",
+			},
+			ExpectedExists: true,
+			ExpectedError:  nil,
+		},
+		{
+			Name: "Course not found",
+			Course: domain.CourseDomain{
+				Description: "Portuguêss",
+				Outline:     "Tempos Verbais",
+			},
+			CourseDomainDataBaseRepository: output.CourseDomainDataBaseRepositoryMock{
+				GetByIDMock: func(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
+					return domain.CourseDomain{}, false, nil
+				},
+			},
+			CourseDomainCacheRepository: output.CourseDomainCacheRepositoryMock{
+				SetMock: func(contextControl domain.ContextControl, key string, hash string, expirationTime time.Duration) error {
+					return nil
+				},
+			},
+			ExpectedResult: domain.CourseDomain{},
+			ExpectedExists: false,
+			ExpectedError:  nil,
+		},
+	}
+
+	for _, test := range tests {
+
+		t.Run(test.Name, func(t *testing.T) {
+
+			courseService := CourseService{
+				LoggerSugar:                    loggerSugar,
+				CourseDomainCacheRepository:    test.CourseDomainCacheRepository,
+				CourseDomainDataBaseRepository: test.CourseDomainDataBaseRepository,
+			}
+
+			contextControl := domain.ContextControl{
+				Context: context.Background(),
+			}
+
+			course, exists, err := courseService.GetByID(contextControl, 1)
+			assert.Equal(t, test.ExpectedResult, course)
+			assert.Equal(t, test.ExpectedExists, exists)
+			assert.Equal(t, test.ExpectedError, err)
+		})
+	}
+}

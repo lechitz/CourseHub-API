@@ -16,21 +16,22 @@ type CourseService struct {
 	CourseDomainCacheRepository    output.ICourseDomainCacheRepository
 }
 
-var CacheTTL = 10 * time.Minute
+var CourseCacheTTL = 10 * time.Minute
 
 const (
 	CourseCacheKeyTypeID = "ID"
 )
 
 const (
-	CourseErrorToSaveInCache = "error to save course in cache."
+	CourseErrorToSaveInCache    = "error to save course in cache"
+	CourseErrorToGetByIDInCache = "error to save course in cache"
 )
 
-func (service CourseService) getCacheKey(cacheKeyType string, value string) string {
+func (service *CourseService) getCacheKey(cacheKeyType string, value string) string {
 	return fmt.Sprintf("%s.%s", cacheKeyType, value)
 }
 
-func (service CourseService) Create(contextControl domain.ContextControl, course domain.CourseDomain) (domain.CourseDomain, error) {
+func (service *CourseService) Create(contextControl domain.ContextControl, course domain.CourseDomain) (domain.CourseDomain, error) {
 
 	course.RegistrationDate = time.Now()
 	save, err := service.CourseDomainDataBaseRepository.Save(contextControl, course)
@@ -41,9 +42,27 @@ func (service CourseService) Create(contextControl domain.ContextControl, course
 	hash, _ := json.Marshal(save)
 	if err = service.CourseDomainCacheRepository.Set(contextControl,
 		service.getCacheKey(CourseCacheKeyTypeID, strconv.FormatInt(save.ID, 10)),
-		string(hash), CacheTTL); err != nil {
+		string(hash), CourseCacheTTL); err != nil {
 		service.LoggerSugar.Infow(CourseErrorToSaveInCache, "course_id", save.ID)
 	}
 
 	return save, nil
+}
+
+func (service *CourseService) GetByID(contextControl domain.ContextControl, ID int64) (domain.CourseDomain, bool, error) {
+	course, exists, err := service.CourseDomainDataBaseRepository.GetByID(contextControl, ID)
+	if err != nil {
+		return domain.CourseDomain{}, exists, err
+	}
+
+	if !exists {
+		return domain.CourseDomain{}, exists, nil
+	}
+	hash, _ := json.Marshal(course)
+	if err = service.CourseDomainCacheRepository.Set(contextControl,
+		service.getCacheKey(CourseCacheKeyTypeID, strconv.FormatInt(course.ID, 10)),
+		string(hash), CourseCacheTTL); err != nil {
+		service.LoggerSugar.Infow(CourseErrorToGetByIDInCache, "address_id", course.ID) //TODO: to adjust the keyAndValues
+	}
+	return course, exists, nil
 }

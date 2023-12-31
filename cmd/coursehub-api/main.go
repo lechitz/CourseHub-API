@@ -60,7 +60,7 @@ func main() {
 	}
 
 	courseHandler := &handler.Course{
-		CourseService: courseService,
+		CourseService: &courseService,
 		LoggerSugar:   loggerSugar,
 	}
 
