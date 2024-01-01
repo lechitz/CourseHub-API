@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 const (
@@ -32,17 +31,15 @@ type Course struct {
 }
 
 type CourseRequest struct {
-	ID               int64     `json:"id"`
-	Description      string    `json:"description"`
-	Outline          string    `json:"outline"`
-	RegistrationDate time.Time `json:"registration_date"`
+	ID          int64  `json:"id"`
+	Description string `json:"description"`
+	Outline     string `json:"outline"`
 }
 
 type CourseResponse struct {
-	ID               int64     `json:"id"`
-	Description      string    `json:"description"`
-	Outline          string    `json:"outline"`
-	RegistrationDate time.Time `json:"registration_date"`
+	ID          int64  `json:"id"`
+	Description string `json:"description"`
+	Outline     string `json:"outline"`
 }
 
 func (c *Course) Create(w http.ResponseWriter, r *http.Request) {

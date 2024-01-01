@@ -41,3 +41,13 @@ func (router Router) AddGroupHandlerCourse(ah *handler.Course) func(r chi.Router
 		})
 	}
 }
+
+func (router Router) AddGroupHandlerStudent(ah *handler.Student) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Route("/student", func(r chi.Router) {
+			r.Post("/create", ah.Create)
+			r.Get("/{id}", ah.GetByID)
+			r.Get("/students", ah.GetStudents)
+		})
+	}
+}

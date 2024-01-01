@@ -8,3 +8,9 @@ type CourseDomain struct {
 	Outline          string
 	RegistrationDate time.Time
 }
+
+type StudentDomain struct {
+	ID               int64
+	Name             string
+	RegistrationDate time.Time
+}
